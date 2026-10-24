@@ -60,7 +60,39 @@ def build_parser() -> argparse.ArgumentParser:
     return ap
 
 
+def _js_extract(argv: list[str]) -> int:
+    """python3 arsenal.py --js-extract URL OUT_DIR [--cookie C] [--depth N] [--analyse] [--proxy P] [--insecure]"""
+    from .core.urlnorm import TargetError
+    from .extract import run_extract
+
+    p = argparse.ArgumentParser(prog="arsenal --js-extract", description="Download every JS file for a target into OUT_DIR/js")
+    p.add_argument("--js-extract", nargs=2, metavar=("URL", "OUT_DIR"), required=True,
+                   help="target in any format (example.com, www.x.com, https://x.com/a, host:port, IP) and output folder")
+    p.add_argument("--cookie", default="", help="Cookie header value for authenticated pages")
+    p.add_argument("--depth", type=int, default=1, help="page crawl depth (0 = only the given page)")
+    p.add_argument("--analyse", action="store_true", help="also write endpoints.txt, wordlist.txt, findings.json, report.md")
+    p.add_argument("--proxy", help="e.g. http://127.0.0.1:8080")
+    p.add_argument("--insecure", action="store_true", help="skip TLS verification")
+    a = p.parse_args(argv)
+    url, out = a.js_extract
+    print(BANNER, file=sys.stderr)
+    try:
+        r = run_extract(url, out, print, a.cookie, a.depth, a.analyse, a.proxy, a.insecure)
+    except (TargetError, RuntimeError) as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
+    line = f"saved={r['saved']} skipped={r['skipped']} errors={r['errors']} third_party={r['third_party']} from {r['url']}"
+    if "endpoints" in r:
+        line += f" endpoints={r['endpoints']} secrets={r['secrets']}"
+    print(line)
+    print(f"JS files in: {r['out']}/js")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
+    args = sys.argv[1:] if argv is None else argv
+    if "--js-extract" in args:
+        return _js_extract(args)
     a = build_parser().parse_args(argv)
     log = (lambda *_: None) if getattr(a, "quiet", False) else print
     print(BANNER, file=sys.stderr)
