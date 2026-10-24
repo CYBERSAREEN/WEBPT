@@ -9,8 +9,13 @@ from .core.urlnorm import normalize_target
 from .pipeline import Engagement
 
 
-def run_extract(target_text: str, out_dir: str, log=print, cookie: str = "", depth: int = 1,
-                analyse: bool = False, proxy: str | None = None, insecure: bool = False) -> dict:
+MAX_DEPTH = 1_000_000   # effectively unlimited: follow every in-scope link
+MAX_PAGES = 5_000       # safety ceilings so a calendar/infinite-query site cannot run forever
+MAX_FILES = 50_000
+
+
+def run_extract(target_text: str, out_dir: str, log=print, cookie: str = "", analyse: bool = False,
+                proxy: str | None = None, insecure: bool = False, delay: float = 0, stay_in_path: bool = False) -> dict:
     """Normalise the target, try each candidate URL (https then http), save JS, optionally analyse."""
     candidates = normalize_target(target_text)
     out = Path(out_dir).expanduser()
@@ -21,9 +26,14 @@ def run_extract(target_text: str, out_dir: str, log=print, cookie: str = "", dep
         log(f"-> trying {url}")
         host = url.split("//", 1)[1].split("/", 1)[0]
         local = host.startswith(("localhost", "127.", "10.", "192.168.", "[::1]"))
-        client = HttpClient(proxy=proxy, timeout=15, retries=2, insecure=insecure or local, headers=headers)
+        client = HttpClient(proxy=proxy, timeout=15, retries=2, delay=delay, insecure=insecure or local, headers=headers)
         scope = ScopeGuard.from_targets([url], [], False)
-        eng = Engagement([url], out, client, scope, depth=depth, max_pages=10, max_files=500, third_party=False)
+        prefix = ""
+        if stay_in_path:
+            prefix = "/" + url.split("//", 1)[1].split("/", 1)[1].split("?")[0].strip("/") if "/" in url.split("//", 1)[1] else ""
+            prefix = "" if prefix == "/" else prefix
+        eng = Engagement([url], out, client, scope, depth=MAX_DEPTH, max_pages=MAX_PAGES, max_files=MAX_FILES,
+                         third_party=False, page_prefix=prefix)
         try:
             if analyse:
                 res, findings = eng.full(False, log)

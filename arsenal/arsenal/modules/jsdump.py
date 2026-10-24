@@ -13,6 +13,11 @@ from ..core.storage import OutputStore
 JS_CT = ("javascript", "ecmascript")
 # quoted strings that look like a JS file reference, e.g. "/_next/static/chunks/app.js?v=3"
 STRING_REF = re.compile(r"""["'`]((?:https?:)?//[^"'`\s<>]+?\.m?js(?:\?[^"'`\s<>]*)?|[./A-Za-z0-9_@~-][^"'`\s<>]*?\.m?js(?:\?[^"'`\s<>]*)?)["'`]""")
+# links a crawler must not follow: binaries (wasteful) and state-changing/session-ending URLs
+SKIP_EXT = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".ico", ".bmp", ".avif", ".pdf", ".zip", ".gz", ".tar",
+            ".7z", ".rar", ".mp3", ".mp4", ".webm", ".mov", ".avi", ".woff", ".woff2", ".ttf", ".otf", ".eot",
+            ".css", ".xml", ".csv", ".xls", ".xlsx", ".doc", ".docx", ".exe", ".dmg", ".apk", ".iso")
+UNSAFE_LINK = re.compile(r"(log[-_]?out|sign[-_]?out|signoff|delete|remove|destroy|unsubscribe|revoke|reset[-_]?password)", re.I)
 STATIC_IMPORT = re.compile(r"""(?:\bimport\s*(?:[^'"()]*?\bfrom\s*)?|\bexport\s[^'"()]*?\bfrom\s*|\bimport\s*\(\s*)["']([^"']+)["']""")
 SOURCEMAP = re.compile(r"""[#@]\s*sourceMappingURL=([^\s'"]+)""")
 
@@ -76,10 +81,12 @@ class JSDumper:
         max_files: int = 500,
         third_party: bool = False,
         log=print,
+        page_prefix: str = "",
     ):
         self.client, self.store, self.scope = client, store, scope
         self.depth, self.max_pages, self.max_files = depth, max_pages, max_files
         self.third_party = third_party
+        self.page_prefix = page_prefix
         self.log = log
         self.result = DumpResult()
         self._seen_js: set[str] = set()
@@ -123,12 +130,23 @@ class JSDumper:
             if d < self.depth:
                 for href in page.links:
                     nxt = urldefrag(urljoin(base, href))[0]
-                    if nxt not in self._seen_pages and self.scope.allows(nxt):
+                    if nxt not in self._seen_pages and self.scope.allows(nxt) and not self._skip_link(nxt):
                         queue.append((nxt, d + 1))
         self.store.write_manifest()
         return self.result
 
     # ---- internals ----
+    def _skip_link(self, url: str) -> bool:
+        path = urlsplit(url).path
+        if path.lower().endswith(SKIP_EXT):
+            return True
+        if self.page_prefix and not path.startswith(self.page_prefix):
+            return True
+        if UNSAFE_LINK.search(path):
+            self.result.skipped.append((url, "state-changing/logout link not followed"))
+            return True
+        return False
+
     def _from_page(self, page: PageParser, base: str, page_url: str):
         for i, code in enumerate(page.inline):
             self._inline_n += 1

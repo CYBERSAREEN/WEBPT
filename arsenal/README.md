@@ -26,10 +26,14 @@ Outputs in `-o DIR`: `js/` (raw files), `sources/` (recovered originals), `repor
 
 See `docs/USAGE.md` for how to use it efficiently. Tests: `python3 -m unittest discover -s tests`.
 
-## Quick JS extract (any URL format)
+## Quick JS extract (any URL format, full crawl)
 ```
-python3 arsenal.py --js-extract <url> <output-folder> [--cookie "N=V"] [--depth N] [--analyse] [--proxy URL]
+python3 arsenal.py --js-extract <url> <output-folder> [--cookie "N=V"] [--analyse] [--delay S] [--stay-in-path] [--proxy URL]
 python3 arsenal.py --js-extract www.example.com ~/recon/example
-python3 arsenal.py --js-extract "https://example.com:8443/app?x=1" ~/recon/example --analyse
+python3 arsenal.py --js-extract "https://example.com:8443/app?x=1" ~/recon/example --analyse --delay 0.5
 ```
-The target can be `example.com`, `www.example.com`, `http(s)://...`, `host:port`, an IP, `localhost:3000`, `//host/path`, or a pasted/defanged form like `hxxps://example[.]com`. With no scheme it tries https, then http. JS files are saved under `<output-folder>/js/`; `--analyse` also writes `endpoints.txt`, `wordlist.txt`, `findings.json` and `report.md`.
+- Target can be `example.com`, `www.example.com`, `http(s)://...`, `host:port`, an IP, `localhost:3000`, `//host/path`, or a pasted/defanged form like `hxxps://example[.]com`. With no scheme it tries https, then http.
+- Crawl depth is always maximum: every in-scope page reachable by links is visited and all its JS is saved (safety ceilings: 5,000 pages, 50,000 files). Scope is the target's host only; other hosts and CDNs are listed, not fetched.
+- Never followed: logout/delete/remove/reset-style links (so an authenticated crawl keeps its session) and binary/media links.
+- `--stay-in-path` limits which *pages* are crawled to the URL's path (for engagements scoped to e.g. `/labs/harbor`); JS is still downloaded from anywhere on the host.
+- JS goes to `<output-folder>/js/`; `--analyse` also writes `endpoints.txt`, `wordlist.txt`, `findings.json`, `report.md`.

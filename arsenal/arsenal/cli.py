@@ -61,23 +61,24 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _js_extract(argv: list[str]) -> int:
-    """python3 arsenal.py --js-extract URL OUT_DIR [--cookie C] [--depth N] [--analyse] [--proxy P] [--insecure]"""
+    """python3 arsenal.py --js-extract URL OUT_DIR [--cookie C] [--analyse] [--delay S] [--stay-in-path] [--proxy P] [--insecure]"""
     from .core.urlnorm import TargetError
     from .extract import run_extract
 
-    p = argparse.ArgumentParser(prog="arsenal --js-extract", description="Download every JS file for a target into OUT_DIR/js")
+    p = argparse.ArgumentParser(prog="arsenal --js-extract", description="Crawl every in-scope page (no depth limit) and download all its JS into OUT_DIR/js")
     p.add_argument("--js-extract", nargs=2, metavar=("URL", "OUT_DIR"), required=True,
                    help="target in any format (example.com, www.x.com, https://x.com/a, host:port, IP) and output folder")
     p.add_argument("--cookie", default="", help="Cookie header value for authenticated pages")
-    p.add_argument("--depth", type=int, default=1, help="page crawl depth (0 = only the given page)")
     p.add_argument("--analyse", action="store_true", help="also write endpoints.txt, wordlist.txt, findings.json, report.md")
     p.add_argument("--proxy", help="e.g. http://127.0.0.1:8080")
     p.add_argument("--insecure", action="store_true", help="skip TLS verification")
+    p.add_argument("--delay", type=float, default=0, help="seconds between requests (be gentle on fragile targets)")
+    p.add_argument("--stay-in-path", action="store_true", help="only crawl pages under the URL's path (e.g. /labs/harbor), still downloads all JS")
     a = p.parse_args(argv)
     url, out = a.js_extract
     print(BANNER, file=sys.stderr)
     try:
-        r = run_extract(url, out, print, a.cookie, a.depth, a.analyse, a.proxy, a.insecure)
+        r = run_extract(url, out, print, a.cookie, a.analyse, a.proxy, a.insecure, a.delay, a.stay_in_path)
     except (TargetError, RuntimeError) as e:
         print(f"error: {e}", file=sys.stderr)
         return 2
