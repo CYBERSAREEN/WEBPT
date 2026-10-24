@@ -13,8 +13,8 @@ HOST=${BASE#*://}; HOST=${HOST%%/*}
 
 mkdir -p "$ROOT"/{00-scope,01-recon,02-burp,03-evidence/{screenshots,requests,logs},04-notes,05-report,tools}
 cp "$HERE"/../log-to-html/converter.py "$ROOT"/
-cp "$HERE"/../log-to-html/tools/* "$ROOT"/tools/
-cp "$HERE"/shot.sh "$HERE"/log.sh "$HERE"/refresh.sh "$HERE"/redact.py "$ROOT"/tools/
+find "$HERE"/../log-to-html/tools -maxdepth 1 -type f -exec cp {} "$ROOT"/tools/ \;
+cp "$HERE"/shot.sh "$HERE"/log.sh "$HERE"/refresh.sh "$ROOT"/tools/
 chmod +x "$ROOT"/tools/*.sh
 
 cat > "$ROOT/00-scope/scope.md" <<EOF
@@ -74,8 +74,10 @@ tools/                 converter + helpers
 
 ## Start of engagement
 1. Burp: start a **new project on disk** (not temporary) and save it as \`02-burp/$NAME.burp\`.
-2. Burp Target -> Scope: add \`^https://$HOST$PREFIX\` (use advanced scope, regex). Proxy settings: do not send out-of-scope items to history.
-3. Logger++ -> Options -> Import/Export -> Auto-save: tick it, format CSV, path \`$ROOT/02-burp/LoggerPlusPlus_Autosave.csv\`.
+2. Burp Target -> Scope: add \`^https://${HOST//./\\.}/(api/)?${PREFIX#/}\` (use advanced scope, regex). Proxy settings: do not send out-of-scope items to history.
+3. Logger++ -> Options -> CSV Exporter -> **Auto-export as CSV**. In the field dialog click **Select None**, then tick ONLY these 29 fields (keep the dialog's own order), click **Save** and name the preset `SAFE`, then OK and choose `\$ROOT/02-burp/LoggerPlusPlus_Autosave.csv`:
+   `Entry.Tool, Entry.Tags, Entry.InScope, Request.BodyLength, Request.Time, Request.Length, Request.Tool, Request.Comment, Request.Complete, Request.Method, Request.Path, Request.Protocol, Request.Hostname, Request.Extension, Request.HasParams, Request.HasGetParam, Request.HasPostParam, Request.HasSentCookies, Request.ParameterCount, Response.BodyLength, Response.Time, Response.Length, Response.Status, Response.StatusText, Response.RTT, Response.Title, Response.ContentType, Response.MimeType, Response.HasSetCookies`
+   Never tick: Headers, Body, AsBase64, URL, Query, PathQuery, Parameters, CookieString, Cookies, Redirect, Reflections. These carry cookies, tokens and param values. The log is then safe to share; the .burp project file is NOT (keep it local).
 4. Logger++ filter: \`Request.Host == "$HOST"\`.
 5. Proxy the browser through 127.0.0.1:8080.
 

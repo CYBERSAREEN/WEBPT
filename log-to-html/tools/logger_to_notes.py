@@ -34,9 +34,31 @@ COMMENT_RE = re.compile(r"^\s*TEST:\s*(.*?)\s*$", re.I)
 RESULTS = {"passed": "PASS", "pass": "PASS", "failed": "FAIL", "fail": "FAIL", "info": "INFO"}
 
 
+# SAFE preset (no cookies, tokens, headers, bodies, query strings, params values, raw base64).
+# Select exactly these Logger++ fields, in this order, in the CSV Export dialog:
+SAFE_FIELDS = [
+    "Entry.Tool", "Entry.Tags", "Entry.InScope", "Request.BodyLength", "Request.Time",
+    "Request.Length", "Request.Tool", "Request.Comment", "Request.Complete", "Request.Method",
+    "Request.Path", "Request.Protocol", "Request.Hostname", "Request.Extension",
+    "Request.HasParams", "Request.HasGetParam", "Request.HasPostParam", "Request.HasSentCookies",
+    "Request.ParameterCount", "Response.BodyLength", "Response.Time", "Response.Length",
+    "Response.Status", "Response.StatusText", "Response.RTT", "Response.Title",
+    "Response.ContentType", "Response.MimeType", "Response.HasSetCookies",
+]
+# index of each SAFE column inside the full 57-column Logger++ layout
+SAFE_TO_FULL = [0, 1, 2, 8, 9, 10, 11, 12, 13, 15, 16, 19, 22, 27, 29, 30, 31, 32, 34, 40, 42, 43, 45, 46, 48, 49, 50, 52, 53]
+FULL_COLS = 57
+
+
 def read_rows(path):
+    """Yield rows in the full layout. Accepts the full export or the SAFE preset."""
     with open(path, newline="", encoding="utf-8", errors="replace") as f:
         for r in csv.reader(f):
+            if len(r) == len(SAFE_FIELDS):
+                full = [""] * FULL_COLS
+                for i, j in enumerate(SAFE_TO_FULL):
+                    full[j] = r[i]
+                r = full
             if len(r) >= MIN_COLS and r[TOOL] in KNOWN_TOOLS:
                 yield r
 
