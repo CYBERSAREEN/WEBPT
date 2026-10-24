@@ -38,14 +38,8 @@ duplicate script tags, `<base href>`, protocol-relative CDN URLs, `data:` script
 missing files, same bytes under two URLs (dedupe), same path with different query (separate files), path traversal in URLs and
 sourcemap `sources`, invalid/empty sourcemaps, inline base64 maps, redirects, size cap, unreachable host, out-of-scope pages, `--max-files`.
 
-## Try it on BreachLab
-```
-npm run dev   # in ~/Desktop/Security-Pentest/breachlab  (port 3000)
-./arsenal.py full http://localhost:3000/labs/harbor -o /tmp/a --depth 0
-# log in as emma.k, copy hh_token, then:
-./arsenal.py full http://localhost:3000/labs/harbor/dashboard --cookie "hh_token=..." -o /tmp/b --depth 0
-grep admin /tmp/b/endpoints.txt   # hidden admin route only shipped to logged-in users
-```
+## Try it on a lab
+Run the two sweeps from the workflow above against your own lab target, authenticated with your own cookie. Do not write lab-specific answers (cookie names, hidden routes) into docs.
 
 ## Extend it
 Subclass `Module`, implement `scan_text(text, file) -> list[Finding]`, add it to `Analyzer`. Ideas: DOM-sink finder, postMessage handler finder, GraphQL schema grabber, hidden-parameter fuzzer, JWT decoder.
