@@ -7,3 +7,4 @@ Web pentest tools and scripts built while learning. Authorized targets and lab e
 - `burp-extensions/` - which Burp extension to use when, and where to practise
 
 Captured traffic, Burp projects and jars are git-ignored on purpose.
+- `engagement/` - scaffold a pentest folder (scope, burp, evidence, notes, report) with screenshot, log and refresh helpers
