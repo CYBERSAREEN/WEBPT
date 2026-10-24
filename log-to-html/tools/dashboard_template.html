@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pentest Dashboard</title>
+<style>
+:root{
+  --bg:#f4f6f9;--panel:#ffffff;--panel2:#f8fafc;--ink:#1c2430;--muted:#5d6b7c;--line:#e1e6ee;
+  --accent:#2f5fd0;--pass:#1f8a4c;--pass-bg:#e5f5ec;--fail:#c4322f;--fail-bg:#fbe9e8;
+  --info:#2f6fa8;--info-bg:#e6f0f9;--warn:#a86a10;--warn-bg:#fcf1de;--shadow:0 1px 2px rgba(20,30,50,.06),0 4px 14px rgba(20,30,50,.05);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f141b;--panel:#171e28;--panel2:#1b2430;--ink:#e6ebf2;--muted:#93a1b3;--line:#27313f;
+  --accent:#6b93f0;--pass:#4cc17f;--pass-bg:#15301f;--fail:#ef6c68;--fail-bg:#3a1a19;
+  --info:#6fb0ea;--info-bg:#172a3c;--warn:#e3a54a;--warn-bg:#35280f;--shadow:none;}}
+:root[data-theme="dark"]{
+  --bg:#0f141b;--panel:#171e28;--panel2:#1b2430;--ink:#e6ebf2;--muted:#93a1b3;--line:#27313f;
+  --accent:#6b93f0;--pass:#4cc17f;--pass-bg:#15301f;--fail:#ef6c68;--fail-bg:#3a1a19;
+  --info:#6fb0ea;--info-bg:#172a3c;--warn:#e3a54a;--warn-bg:#35280f;--shadow:none;}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1240px;margin:0 auto;padding:0 16px 48px}
+header.top{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--line);padding:14px 0;margin-bottom:18px}
+header.top .row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;max-width:1240px;margin:0 auto;padding:0 16px}
+h1{font-size:18px;margin:0;font-weight:650;letter-spacing:.1px}
+.sub{color:var(--muted);font-size:12.5px}
+.spacer{flex:1}
+button,.chip{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 11px;cursor:pointer}
+button:hover,.chip:hover{border-color:var(--accent)}
+button:focus-visible,input:focus-visible,.chip:focus-visible,th[tabindex]:focus-visible,tr[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:14px 16px}
+.kpi .n{font-size:28px;font-weight:700;line-height:1.1}
+.kpi .l{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+.kpi.fail .n{color:var(--fail)}.kpi.pass .n{color:var(--pass)}.kpi.info .n{color:var(--info)}
+.meter{height:6px;border-radius:4px;background:var(--line);margin-top:8px;overflow:hidden}
+.meter>i{display:block;height:100%;background:var(--accent)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:12px;margin-bottom:16px}
+.card h2{font-size:13px;margin:0 0 10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.donut{display:flex;align-items:center;gap:16px}
+.legend{display:grid;gap:5px;font-size:13px}
+.legend span.dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:7px}
+.bars{display:grid;gap:7px}
+.bar{display:grid;grid-template-columns:96px 1fr 34px;gap:8px;align-items:center;font-size:12.5px}
+.bar .lab{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar .track{height:10px;background:var(--panel2);border:1px solid var(--line);border-radius:5px;overflow:hidden;display:flex}
+.bar .track i{display:block;height:100%}
+.bar .v{text-align:right;color:var(--muted)}
+.gaps{display:flex;flex-wrap:wrap;gap:6px}
+.gap{background:var(--warn-bg);color:var(--warn);border:1px solid var(--line);border-radius:6px;padding:2px 8px;font:12px ui-monospace,SFMono-Regular,Menlo,monospace}
+.empty{color:var(--muted);font-style:italic}
+.tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0 10px}
+.tabs{display:flex;gap:4px}
+.tab{border-radius:8px 8px 0 0;border-bottom:none}
+.tab[aria-selected="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+input[type=search]{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 11px;min-width:240px;flex:1;max-width:420px}
+.chip[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tablewrap{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:760px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{position:sticky;top:0;background:var(--panel2);font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);cursor:pointer;user-select:none;white-space:nowrap}
+th .arrow{opacity:.6;margin-left:4px}
+tbody tr.main{cursor:pointer}
+tbody tr.main:hover{background:var(--panel2)}
+tr.detail td{background:var(--panel2);font-size:13px}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;word-break:break-all}
+.badge{display:inline-block;border-radius:999px;padding:1px 9px;font-size:12px;font-weight:600;margin:0 4px 2px 0;border:1px solid transparent}
+.b-PASS{background:var(--pass-bg);color:var(--pass)}.b-FAIL{background:var(--fail-bg);color:var(--fail)}
+.b-INFO{background:var(--info-bg);color:var(--info)}.b-none{background:var(--warn-bg);color:var(--warn)}
+.b-code{background:var(--panel2);color:var(--ink);border-color:var(--line)}
+.b-s2{color:var(--pass)}.b-s3{color:var(--info)}.b-s4{color:var(--warn)}.b-s5{color:var(--fail)}
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:3px 12px}
+.kv dt{color:var(--muted)}.kv dd{margin:0}
+.foot{color:var(--muted);font-size:12px;margin-top:12px}
+@media (max-width:640px){.bar{grid-template-columns:70px 1fr 28px}.kpi .n{font-size:24px}}
+@media print{header.top,.tools{display:none}}
+</style>
+</head>
+<body>
+<header class="top"><div class="row">
+  <div><h1>Pentest dashboard</h1><div class="sub" id="meta"></div></div>
+  <div class="spacer"></div>
+  <button id="csv" title="Download the rows currently shown">Export CSV</button>
+  <button id="theme" title="Toggle light or dark">Theme</button>
+</div></header>
+
+<main class="wrap">
+  <section class="kpis" id="kpis" aria-label="Summary"></section>
+  <section class="grid2">
+    <div class="card"><h2>Test results</h2><div class="donut" id="donut"></div></div>
+    <div class="card"><h2>Results by category</h2><div class="bars" id="cats"></div></div>
+    <div class="card"><h2>Responses by status</h2><div class="bars" id="statuses"></div></div>
+    <div class="card"><h2>Requests by tool</h2><div class="bars" id="toolsbars"></div></div>
+  </section>
+  <section class="card" style="margin-bottom:16px"><h2>Coverage gaps: endpoints with no test case</h2><div class="gaps" id="gaps"></div></section>
+
+  <div class="tools">
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <input type="search" id="q" placeholder="Search (press / to focus)" aria-label="Search">
+    <div id="chips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+  </div>
+  <div class="tablewrap"><table id="tbl"><thead></thead><tbody></tbody></table></div>
+  <p class="foot" id="count"></p>
+</main>
+
+<script type="application/json" id="data">__DATA__</script>
+<script>
+"use strict";
+const D = JSON.parse(document.getElementById("data").textContent);
+const $ = (id) => document.getElementById(id);
+function el(tag, attrs, ...kids) {           // text only: never innerHTML with log data
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k === "class") e.className = v; else if (k.startsWith("on")) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v);
+  }
+  for (const c of kids.flat()) if (c != null) e.append(c.nodeType ? c : document.createTextNode(String(c)));
+  return e;
+}
+const svgNS = "http://www.w3.org/2000/svg";
+const COLORS = {PASS: "var(--pass)", FAIL: "var(--fail)", INFO: "var(--info)", none: "var(--warn)"};
+const sum = (o) => Object.values(o).reduce((a, b) => a + b, 0);
+
+/* theme */
+const root = document.documentElement;
+try { const t = localStorage.getItem("pt-theme"); if (t) root.dataset.theme = t; } catch (e) {}
+$("theme").onclick = () => {
+  const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme:dark)").matches;
+  root.dataset.theme = dark ? "light" : "dark";
+  try { localStorage.setItem("pt-theme", root.dataset.theme); } catch (e) {}
+};
+
+/* derived numbers */
+const real = D.endpoints.filter((e) => !e.probed);
+const probed = D.endpoints.filter((e) => e.probed);
+const totalReq = real.reduce((a, e) => a + e.requests, 0);
+const results = {PASS: 0, FAIL: 0, INFO: 0};
+D.tests.forEach((t) => results[t.result]++);
+const tested = real.filter((e) => sum(e.tests) > 0);
+const coverage = real.length ? Math.round((tested.length / real.length) * 100) : 0;
+$("meta").textContent = `Source ${D.source} - generated ${D.generated}`;
+
+/* KPIs */
+function kpi(n, label, cls, extra) { return el("div", {class: "card kpi " + (cls || "")}, el("div", {class: "n"}, n), el("div", {class: "l"}, label), extra); }
+$("kpis").append(
+  kpi(real.length, "Endpoints"), kpi(totalReq, "Requests (no noise)"), kpi(D.tests.length, "Test cases"),
+  kpi(results.FAIL, "FAIL = vulnerable", "fail"), kpi(results.PASS, "PASS = defended", "pass"), kpi(results.INFO, "Info", "info"),
+  kpi(coverage + "%", "Endpoint coverage", "", el("div", {class: "meter"}, el("i", {style: `width:${coverage}%`}))));
+
+/* donut */
+(function () {
+  const total = D.tests.length, r = 38, C = 2 * Math.PI * r;
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", "0 0 100 100"); svg.setAttribute("width", "112"); svg.setAttribute("height", "112");
+  svg.setAttribute("role", "img"); svg.setAttribute("aria-label", `PASS ${results.PASS}, FAIL ${results.FAIL}, INFO ${results.INFO}`);
+  const mk = (a) => { const c = document.createElementNS(svgNS, "circle"); for (const k in a) c.setAttribute(k, a[k]); return c; };
+  svg.append(mk({cx: 50, cy: 50, r, fill: "none", stroke: "var(--line)", "stroke-width": 14}));
+  let off = 0;
+  if (total) for (const k of ["FAIL", "PASS", "INFO"]) {
+    const len = (results[k] / total) * C; if (!len) continue;
+    svg.append(mk({cx: 50, cy: 50, r, fill: "none", stroke: COLORS[k], "stroke-width": 14,
+      "stroke-dasharray": `${len} ${C - len}`, "stroke-dashoffset": -off, transform: "rotate(-90 50 50)"}));
+    off += len;
+  }
+  const label = document.createElementNS(svgNS, "text");
+  label.setAttribute("x", 50); label.setAttribute("y", 56); label.setAttribute("text-anchor", "middle");
+  label.setAttribute("font-size", "20"); label.setAttribute("font-weight", "700"); label.setAttribute("fill", "currentColor");
+  label.textContent = total; svg.append(label);
+  const legend = el("div", {class: "legend"}, ["FAIL", "PASS", "INFO"].map((k) =>
+    el("div", {}, el("span", {class: "dot", style: `background:${COLORS[k]}`}), `${k}: ${results[k]}`)));
+  $("donut").append(svg, legend);
+})();
+
+/* bar blocks */
+function bars(target, rows, colorOf) {               // rows: [label, {segment: n}]
+  if (!rows.length) { target.append(el("div", {class: "empty"}, "No data yet")); return; }
+  const max = Math.max(...rows.map((r) => sum(r[1])));
+  rows.forEach(([label, segs]) => {
+    const track = el("div", {class: "track"});
+    for (const [k, n] of Object.entries(segs)) track.append(el("i", {style: `width:${(n / max) * 100}%;background:${colorOf(k)}`, title: `${k}: ${n}`}));
+    target.append(el("div", {class: "bar"}, el("div", {class: "lab", title: label}, label), track, el("div", {class: "v"}, sum(segs))));
+  });
+}
+const byCat = {};
+D.tests.forEach((t) => { (byCat[t.cat] = byCat[t.cat] || {}); byCat[t.cat][t.result] = (byCat[t.cat][t.result] || 0) + 1; });
+bars($("cats"), Object.entries(byCat).sort(), (k) => COLORS[k]);
+const byStatus = {};
+real.forEach((e) => { for (const [s, n] of Object.entries(e.status)) byStatus[s] = (byStatus[s] || 0) + n; });
+const sColor = (s) => ({2: "var(--pass)", 3: "var(--info)", 4: "var(--warn)", 5: "var(--fail)"}[String(s)[0]] || "var(--muted)");
+bars($("statuses"), Object.entries(byStatus).sort().map(([s, n]) => [s, {[s]: n}]), sColor);
+const byTool = {};
+real.forEach((e) => e.tools.forEach((tl) => { byTool[tl] = (byTool[tl] || 0) + e.requests; }));
+bars($("toolsbars"), Object.entries(byTool).sort().map(([t, n]) => [t, {x: n}]), () => "var(--accent)");
+
+/* gaps */
+const untested = real.filter((e) => sum(e.tests) === 0);
+$("gaps").append(...(untested.length ? untested.map((e) => el("span", {class: "gap"}, e.key)) : [el("span", {class: "empty"}, real.length ? "Every endpoint has at least one test case." : "No endpoints yet.")]));
+
+/* table engine */
+const statusBadge = (s, n) => el("span", {class: `badge b-code b-s${s[0]}`}, n > 1 ? `${s} x${n}` : s);
+const resBadges = (o) => { const ks = Object.keys(o); return ks.length ? ks.map((k) => el("span", {class: "badge b-" + k}, `${k} ${o[k]}`)) : el("span", {class: "badge b-none"}, "untested"); };
+const VIEWS = {
+  Endpoints: {
+    rows: () => real,
+    chips: ["all", "untested", "has FAIL"],
+    filter: (e, c) => c === "untested" ? sum(e.tests) === 0 : c === "has FAIL" ? (e.tests.FAIL || 0) > 0 : true,
+    text: (e) => [e.key, ...e.params, ...e.tools].join(" "),
+    cols: [
+      ["Endpoint", (e) => e.key, (e) => el("span", {class: "mono"}, e.key)],
+      ["Params", (e) => e.params.join(","), (e) => e.params.length ? el("span", {class: "mono"}, e.params.join(", ")) : "-"],
+      ["Status", (e) => Object.keys(e.status).sort()[0] || "", (e) => Object.entries(e.status).map(([s, n]) => statusBadge(s, n))],
+      ["Requests", (e) => e.requests, (e) => e.requests],
+      ["Tools", (e) => e.tools.join(","), (e) => e.tools.join(", ")],
+      ["Tests", (e) => sum(e.tests), (e) => resBadges(e.tests)],
+    ],
+    detail: (e) => kv([["Endpoint", e.key], ["Parameter names", e.params.join(", ") || "none seen"],
+      ["Status codes", Object.entries(e.status).map(([s, n]) => `${s} x${n}`).join(", ")], ["Sent from", e.tools.join(", ")],
+      ["Related tests", D.tests.filter((t) => t.endpoint === e.key).map((t) => `${t.id} ${t.result}`).join(", ") || "none"]]),
+  },
+  Tests: {
+    rows: () => D.tests,
+    chips: ["all", "FAIL", "PASS", "INFO"],
+    filter: (t, c) => c === "all" || t.result === c,
+    text: (t) => [t.id, t.cat, t.result, t.note, t.endpoint, t.tool, ...t.params.map((p) => p.join("="))].join(" "),
+    cols: [
+      ["ID", (t) => t.id, (t) => t.id],
+      ["Result", (t) => t.result, (t) => el("span", {class: "badge b-" + t.result}, t.result)],
+      ["Category", (t) => t.cat, (t) => t.cat],
+      ["Test", (t) => t.note, (t) => t.note || "-"],
+      ["Endpoint", (t) => t.endpoint, (t) => el("span", {class: "mono"}, t.endpoint)],
+      ["Parsed params", (t) => t.params.map((p) => p[0]).join(","), (t) => el("span", {class: "mono"}, t.params.map((p) => p.join("=")).join("  ") || "-")],
+      ["Tool", (t) => t.tool, (t) => t.tool],
+      ["Reqs", (t) => t.n, (t) => t.n],
+    ],
+    detail: (t) => kv([["Test", `${t.id} - ${t.note || "no note"}`], ["Result", t.result], ["Endpoint", t.endpoint],
+      ["Status codes", Object.entries(t.status).map(([s, n]) => `${s} x${n}`).join(", ")], ["Time", t.time],
+      ["Parameters", t.params.map((p) => p.join(" = ")).join("\n") || "none"]]),
+  },
+  "Probed 404": {
+    rows: () => probed, chips: ["all"], filter: () => true, text: (e) => e.key,
+    cols: [["Probed path", (e) => e.key, (e) => el("span", {class: "mono"}, e.key)], ["Requests", (e) => e.requests, (e) => e.requests]],
+    detail: (e) => kv([["Note", "Only ever returned 404. Not a real route."]]),
+  },
+};
+function kv(pairs) { return el("dl", {class: "kv"}, pairs.flatMap(([k, v]) => [el("dt", {}, k), el("dd", {style: "white-space:pre-wrap"}, v)])); }
+
+const S = {tab: "Endpoints", chip: "all", q: "", sort: {}, open: new Set()};
+let shown = [];
+function render() {
+  const V = VIEWS[S.tab], sort = S.sort[S.tab];
+  $("tabs").replaceChildren(...Object.keys(VIEWS).map((n) => el("button", {class: "tab", role: "tab", "aria-selected": String(n === S.tab),
+    onclick: () => { S.tab = n; S.chip = "all"; S.open.clear(); render(); }}, `${n} (${VIEWS[n].rows().length})`)));
+  $("chips").replaceChildren(...V.chips.map((c) => el("button", {class: "chip", "aria-pressed": String(c === S.chip), onclick: () => { S.chip = c; render(); }}, c)));
+  const q = S.q.trim().toLowerCase();
+  shown = V.rows().filter((r) => V.filter(r, S.chip) && (!q || V.text(r).toLowerCase().includes(q)));
+  if (sort) { const f = V.cols[sort.i][1]; shown = [...shown].sort((a, b) => { const x = f(a), y = f(b); return (x > y ? 1 : x < y ? -1 : 0) * sort.d; }); }
+  $("tbl").tHead.replaceChildren(el("tr", {}, V.cols.map((c, i) => el("th", {tabindex: 0, "aria-sort": sort && sort.i === i ? (sort.d > 0 ? "ascending" : "descending") : "none",
+    onclick: () => { S.sort[S.tab] = {i, d: sort && sort.i === i ? -sort.d : 1}; render(); },
+    onkeydown: (ev) => { if (ev.key === "Enter") ev.currentTarget.click(); }}, c[0], el("span", {class: "arrow"}, sort && sort.i === i ? (sort.d > 0 ? "▲" : "▼") : "")))));
+  const body = $("tbl").tBodies[0]; body.replaceChildren();
+  shown.forEach((r, n) => {
+    const id = S.tab + n, open = S.open.has(id);
+    const tr = el("tr", {class: "main", tabindex: 0, "aria-expanded": String(open),
+      onclick: () => { open ? S.open.delete(id) : S.open.add(id); render(); },
+      onkeydown: (ev) => { if (ev.key === "Enter") ev.currentTarget.click(); }}, V.cols.map((c) => el("td", {}, c[2](r))));
+    body.append(tr);
+    if (open) body.append(el("tr", {class: "detail"}, el("td", {colspan: V.cols.length}, V.detail(r))));
+  });
+  if (!shown.length) body.append(el("tr", {}, el("td", {colspan: V.cols.length, class: "empty"}, "Nothing matches.")));
+  $("count").textContent = `${shown.length} of ${V.rows().length} rows. Click a row for details, a header to sort.`;
+}
+$("q").addEventListener("input", (ev) => { S.q = ev.target.value; render(); });
+addEventListener("keydown", (ev) => { if (ev.key === "/" && document.activeElement.tagName !== "INPUT") { ev.preventDefault(); $("q").focus(); } });
+
+/* CSV export of what is on screen (formula-prefix guarded) */
+$("csv").onclick = () => {
+  const V = VIEWS[S.tab], cell = (v) => { let s = String(v ?? ""); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; };
+  const lines = [V.cols.map((c) => cell(c[0])).join(",")];
+  shown.forEach((r) => lines.push(V.cols.map((c) => cell(c[1](r))).join(",")));
+  const a = el("a", {href: URL.createObjectURL(new Blob([lines.join("\n")], {type: "text/csv"})), download: S.tab.replace(/\W+/g, "_") + ".csv"});
+  document.body.append(a); a.click(); a.remove();
+};
+render();
+</script>
+</body>
+</html>

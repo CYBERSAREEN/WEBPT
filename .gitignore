@@ -1,0 +1,11 @@
+# never commit captured traffic, Burp projects, creds, or jars
+*.burp
+*.burp.backup
+*.csv
+*.jar
+*.zip
+output.html
+evidence/
+screenshots/
+.env
+__pycache__/
