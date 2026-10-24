@@ -14,7 +14,7 @@ HOST=${BASE#*://}; HOST=${HOST%%/*}
 mkdir -p "$ROOT"/{00-scope,01-recon,02-burp,03-evidence/{screenshots,requests,logs},04-notes,05-report,tools}
 cp "$HERE"/../log-to-html/converter.py "$ROOT"/
 cp "$HERE"/../log-to-html/tools/* "$ROOT"/tools/
-cp "$HERE"/shot.sh "$HERE"/log.sh "$HERE"/refresh.sh "$ROOT"/tools/
+cp "$HERE"/shot.sh "$HERE"/log.sh "$HERE"/refresh.sh "$HERE"/redact.py "$ROOT"/tools/
 chmod +x "$ROOT"/tools/*.sh
 
 cat > "$ROOT/00-scope/scope.md" <<EOF
