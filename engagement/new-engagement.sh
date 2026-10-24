@@ -73,6 +73,7 @@ tools/                 converter + helpers
 \`\`\`
 
 ## Start of engagement
+0. Before the first request: Proxy settings -> HTTP match and replace rules AND WebSocket rules. Scroll to the BOTTOM of each table (your own rules are added below Burp's built-ins). Remove anything custom, plus Session handling rules (Project settings -> Sessions). A leftover rule silently edits every request.
 1. Burp: start a **new project on disk** (not temporary) and save it as \`02-burp/$NAME.burp\`.
 2. Burp Target -> Scope (advanced scope control). Add ONE entry with separate fields: Protocol \`HTTPS\`, Host \`^${HOST//./\\.}\$\`, Port \`^443\$\`, File \`^/(api/)?${PREFIX#/}\`. The Host box matches the hostname only, never put a full URL or \`^https://\` there. Proxy settings: untick 'Don't send items to Proxy history or live tasks, if out of scope'.
 3. Logger++ -> Options -> CSV Exporter -> **Auto-export as CSV**. In the field dialog click **Select None**, then tick ONLY these 29 fields (keep the dialog's own order), click **Save** and name the preset \`SAFE\`, then OK and choose \`\$ROOT/02-burp/LoggerPlusPlus_Autosave.csv\`:
